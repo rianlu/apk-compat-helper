@@ -1,0 +1,43 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "APK Compat Helper",
+  "version": "0.1.6",
+  "identifier": "com.pbrain.apkcompathelper",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:5173",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "APK Compat Helper",
+        "width": 920,
+        "height": 700,
+        "minWidth": 760,
+        "minHeight": 620,
+        "resizable": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "resources": [
+      "resources/compatibility-catalog.json",
+      "resources/tooling/macos/aapt2",
+      "resources/tooling/macos/adb",
+      "resources/tooling/macos/apksigner.jar",
+      "resources/tooling/macos/apktool.jar",
+      "resources/tooling/macos/zipalign",
+      "resources/tooling/macos/runtime/bin/*",
+      "resources/tooling/macos/runtime/conf/**/*",
+      "resources/tooling/macos/runtime/lib/**/*",
+      "resources/tooling/macos/runtime/release"
+    ]
+  }
+}

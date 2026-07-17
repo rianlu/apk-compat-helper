@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "android_versions": [
+    { "api": 1, "android": "1.0" },
+    { "api": 8, "android": "2.2" },
+    { "api": 17, "android": "4.2" },
+    { "api": 23, "android": "6.0" },
+    { "api": 24, "android": "7.0" },
+    { "api": 26, "android": "8.0" },
+    { "api": 28, "android": "9" },
+    { "api": 29, "android": "10" },
+    { "api": 30, "android": "11" },
+    { "api": 31, "android": "12" },
+    { "api": 32, "android": "12L" },
+    { "api": 33, "android": "13" },
+    { "api": 34, "android": "14" },
+    { "api": 35, "android": "15" },
+    { "api": 36, "android": "16" }
+  ],
+  "permissions": [
+    { "name": "android.permission.READ_EXTERNAL_STORAGE", "label": "读取存储", "label_en": "Read storage", "description": "读取设备上的照片、媒体和文件.", "description_en": "Reads photos, media, and files stored on the device.", "protection": "dangerous", "runtime_since": 23 },
+    { "name": "android.permission.WRITE_EXTERNAL_STORAGE", "label": "写入存储", "label_en": "Write storage", "description": "向设备共享存储写入或修改文件.", "description_en": "Writes or modifies files in shared device storage.", "protection": "dangerous", "runtime_since": 23 },
+    { "name": "android.permission.CAMERA", "label": "相机", "label_en": "Camera", "description": "拍摄照片或录制视频.", "description_en": "Takes photos or records video.", "protection": "dangerous", "runtime_since": 23 },
+    { "name": "android.permission.RECORD_AUDIO", "label": "麦克风", "label_en": "Microphone", "description": "通过设备麦克风录制音频.", "description_en": "Records audio through the device microphone.", "protection": "dangerous", "runtime_since": 23 },
+    { "name": "android.permission.ACCESS_FINE_LOCATION", "label": "精确位置", "label_en": "Precise location", "description": "访问 GPS 等来源提供的精确位置信息.", "description_en": "Accesses precise location from GPS and related sources.", "protection": "dangerous", "runtime_since": 23 },
+    { "name": "android.permission.ACCESS_COARSE_LOCATION", "label": "大致位置", "label_en": "Approximate location", "description": "访问基于网络的大致位置信息.", "description_en": "Accesses approximate network-based location.", "protection": "dangerous", "runtime_since": 23 },
+    { "name": "android.permission.READ_CONTACTS", "label": "读取联系人", "label_en": "Read contacts", "description": "读取设备通讯录中的联系人信息.", "description_en": "Reads contact information from the device address book.", "protection": "dangerous", "runtime_since": 23 },
+    { "name": "android.permission.READ_PHONE_STATE", "label": "电话状态", "label_en": "Phone state", "description": "读取电话状态、移动网络和设备标识相关信息.", "description_en": "Reads phone state, mobile network, and device identity information.", "protection": "dangerous", "runtime_since": 23 },
+    { "name": "android.permission.BLUETOOTH_SCAN", "label": "扫描附近设备", "label_en": "Scan nearby devices", "description": "扫描附近的蓝牙设备.", "description_en": "Scans for nearby Bluetooth devices.", "protection": "dangerous", "runtime_since": 31 },
+    { "name": "android.permission.BLUETOOTH_CONNECT", "label": "连接附近设备", "label_en": "Connect nearby devices", "description": "连接并与已配对的蓝牙设备通信.", "description_en": "Connects to and communicates with paired Bluetooth devices.", "protection": "dangerous", "runtime_since": 31 },
+    { "name": "android.permission.POST_NOTIFICATIONS", "label": "通知", "label_en": "Notifications", "description": "向用户显示应用通知.", "description_en": "Shows app notifications to the user.", "protection": "dangerous", "runtime_since": 33 }
+  ]
+}
