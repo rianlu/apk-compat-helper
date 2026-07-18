@@ -36,6 +36,12 @@ Local desktop utility for scanning legacy APKs, explaining Android compatibility
 
 The project uses Tauri 2, React, and Rust. Build release packages on their target operating systems or use a CI matrix.
 
+Tool resources are separated into:
+
+- `resources/tooling/common`: cross-platform apktool and apksigner JAR files.
+- `resources/tooling/macos`: native macOS tools and a minimized Java runtime.
+- `resources/tooling/windows`: native Windows tools, ADB DLL files, and a minimized Java runtime generated on Windows.
+
 ## Development
 
 Node.js 20+ and stable Rust are required.
@@ -56,6 +62,13 @@ APK_COMPAT_TOOLS_DIR="$PWD/src-tauri/resources/tooling/macos" cargo test --manif
 Build the macOS package:
 
 ```zsh
+npm run tauri build
+```
+
+Before the first Windows build, install JDK 17 and Android SDK Build Tools / Platform Tools, then configure `JAVA_HOME` and `ANDROID_SDK_ROOT`. `npm run tauri build` prepares the bundled Windows tools automatically:
+
+```powershell
+npm install
 npm run tauri build
 ```
 

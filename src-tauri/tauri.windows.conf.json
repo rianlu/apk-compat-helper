@@ -1,0 +1,20 @@
+{
+  "build": {
+    "beforeBuildCommand": "npm run tools:windows && npm run build"
+  },
+  "bundle": {
+    "resources": [
+      "resources/compatibility-catalog.json",
+      "resources/tooling/common/*.jar",
+      "resources/tooling/windows/aapt2.exe",
+      "resources/tooling/windows/adb.exe",
+      "resources/tooling/windows/AdbWinApi.dll",
+      "resources/tooling/windows/AdbWinUsbApi.dll",
+      "resources/tooling/windows/zipalign.exe",
+      "resources/tooling/windows/runtime/bin/*",
+      "resources/tooling/windows/runtime/conf/**/*",
+      "resources/tooling/windows/runtime/lib/**/*",
+      "resources/tooling/windows/runtime/release"
+    ]
+  }
+}

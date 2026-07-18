@@ -36,6 +36,12 @@
 
 项目采用 Tauri 2、React 和 Rust. macOS 不能直接生成可发布的 Windows 安装包, 请在对应操作系统构建或使用 CI 构建矩阵.
 
+工具资源分为:
+
+- `resources/tooling/common`: 跨平台共用的 apktool 和 apksigner JAR.
+- `resources/tooling/macos`: macOS 原生工具和精简 Java Runtime.
+- `resources/tooling/windows`: Windows 原生工具、ADB DLL 和精简 Java Runtime, 在 Windows 构建时生成.
+
 ## 开发
 
 要求 Node.js 20及以上和 Rust stable.
@@ -56,6 +62,13 @@ APK_COMPAT_TOOLS_DIR="$PWD/src-tauri/resources/tooling/macos" cargo test --manif
 构建 macOS 安装包:
 
 ```zsh
+npm run tauri build
+```
+
+首次在 Windows 构建前, 安装 JDK 17和 Android SDK Build Tools / Platform Tools, 配置 `JAVA_HOME` 与 `ANDROID_SDK_ROOT`. `npm run tauri build` 会自动准备 Windows 内置工具:
+
+```powershell
+npm install
 npm run tauri build
 ```
 

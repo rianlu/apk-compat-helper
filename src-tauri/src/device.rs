@@ -45,9 +45,14 @@ pub fn install(serial: &str, apk: &str) -> Result<String, Box<dyn Error>> {
 }
 
 fn find_adb() -> Option<PathBuf> {
+    let executable = if cfg!(target_os = "windows") {
+        "adb.exe"
+    } else {
+        "adb"
+    };
     env::var_os("APK_COMPAT_TOOLS_DIR")
         .map(PathBuf::from)
-        .map(|path| path.join("adb"))
+        .map(|path| path.join(executable))
         .filter(|path| path.is_file())
         .or_else(|| {
             env::var_os("ANDROID_HOME")
@@ -56,7 +61,7 @@ fn find_adb() -> Option<PathBuf> {
                 .or_else(|| {
                     env::var_os("HOME").map(|home| PathBuf::from(home).join("Library/Android/sdk"))
                 })
-                .map(|path| path.join("platform-tools/adb"))
+                .map(|path| path.join("platform-tools").join(executable))
                 .filter(|path| path.is_file())
         })
 }

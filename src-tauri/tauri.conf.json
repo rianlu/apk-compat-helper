@@ -29,15 +29,7 @@
     "targets": "all",
     "resources": [
       "resources/compatibility-catalog.json",
-      "resources/tooling/macos/aapt2",
-      "resources/tooling/macos/adb",
-      "resources/tooling/macos/apksigner.jar",
-      "resources/tooling/macos/apktool.jar",
-      "resources/tooling/macos/zipalign",
-      "resources/tooling/macos/runtime/bin/*",
-      "resources/tooling/macos/runtime/conf/**/*",
-      "resources/tooling/macos/runtime/lib/**/*",
-      "resources/tooling/macos/runtime/release"
+      "resources/tooling/common/*.jar"
     ]
   }
 }

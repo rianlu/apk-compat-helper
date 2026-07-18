@@ -91,8 +91,12 @@ pub fn run() {
                 .resource_dir()?
                 .join("resources/tooling")
                 .join(platform);
+            let common_tools = app.path().resource_dir()?.join("resources/tooling/common");
             if tools.is_dir() {
                 std::env::set_var("APK_COMPAT_TOOLS_DIR", tools);
+            }
+            if common_tools.is_dir() {
+                std::env::set_var("APK_COMPAT_COMMON_TOOLS_DIR", common_tools);
             }
             Ok(())
         })

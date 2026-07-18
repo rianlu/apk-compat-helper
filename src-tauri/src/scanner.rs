@@ -448,9 +448,14 @@ fn find_aapt2() -> Option<PathBuf> {
 }
 
 pub fn find_android_tool(name: &str) -> Option<PathBuf> {
+    let executable = if cfg!(target_os = "windows") {
+        format!("{name}.exe")
+    } else {
+        name.to_owned()
+    };
     if let Some(path) = env::var_os("APK_COMPAT_TOOLS_DIR")
         .map(PathBuf::from)
-        .map(|path| path.join(name))
+        .map(|path| path.join(&executable))
         .filter(|path| path.is_file())
     {
         return Some(path);
@@ -482,8 +487,8 @@ pub fn find_android_tool(name: &str) -> Option<PathBuf> {
                 .map(str::parse)
                 .collect::<Result<Vec<u32>, _>>()
                 .ok()?;
-            let executable = entry.path().join(name);
-            executable.is_file().then_some((version, executable))
+            let path = entry.path().join(&executable);
+            path.is_file().then_some((version, path))
         })
         .collect();
     versions.sort_by(|left, right| left.0.cmp(&right.0));

@@ -62,9 +62,12 @@ pub fn repair_with_progress<F: Fn(&str)>(
     )?;
 
     let zipalign = super::scanner::find_android_tool("zipalign").ok_or("未找到 zipalign")?;
-    let keytool = bundled_path("runtime/bin/keytool")
-        .or_else(|| find_command("keytool"))
-        .ok_or("未找到 keytool")?;
+    let keytool = bundled_path(
+        "APK_COMPAT_TOOLS_DIR",
+        &format!("runtime/bin/{}", platform_executable("keytool")),
+    )
+    .or_else(|| find_command("keytool"))
+    .ok_or("未找到 keytool")?;
 
     let work = WorkDir::new()?;
     let decoded = work.path.join("decoded");
@@ -304,33 +307,54 @@ fn set_attribute_from(xml: &str, start: usize, attribute: &str, value: &str) -> 
 }
 
 fn find_command(name: &str) -> Option<PathBuf> {
+    let executable = platform_executable(name);
     env::var_os("PATH")
         .and_then(|paths| {
             env::split_paths(&paths)
-                .map(|path| path.join(name))
+                .map(|path| path.join(&executable))
                 .find(|path| path.is_file())
         })
         .or_else(|| {
             ["/opt/homebrew/bin", "/usr/local/bin", "/usr/bin"]
                 .iter()
-                .map(|path| Path::new(path).join(name))
+                .map(|path| Path::new(path).join(&executable))
                 .find(|path| path.is_file())
         })
 }
 
-fn bundled_path(path: &str) -> Option<PathBuf> {
-    env::var_os("APK_COMPAT_TOOLS_DIR")
+fn bundled_path(root_variable: &str, path: &str) -> Option<PathBuf> {
+    env::var_os(root_variable)
         .map(PathBuf::from)
+        .or_else(|| {
+            (root_variable == "APK_COMPAT_COMMON_TOOLS_DIR")
+                .then(|| {
+                    env::var_os("APK_COMPAT_TOOLS_DIR")
+                        .map(PathBuf::from)
+                        .and_then(|root| root.parent().map(|parent| parent.join("common")))
+                })
+                .flatten()
+        })
         .map(|root| root.join(path))
         .filter(|path| path.is_file())
 }
 
 fn jar_command(jar: &str) -> Option<Command> {
-    let java = bundled_path("runtime/bin/java")?;
-    let jar = bundled_path(jar)?;
+    let java = bundled_path(
+        "APK_COMPAT_TOOLS_DIR",
+        &format!("runtime/bin/{}", platform_executable("java")),
+    )?;
+    let jar = bundled_path("APK_COMPAT_COMMON_TOOLS_DIR", jar)?;
     let mut command = Command::new(java);
     command.arg("-jar").arg(jar);
     Some(command)
+}
+
+fn platform_executable(name: &str) -> String {
+    if cfg!(target_os = "windows") {
+        format!("{name}.exe")
+    } else {
+        name.to_owned()
+    }
 }
 
 fn apktool_command() -> Result<Command, Box<dyn Error>> {
