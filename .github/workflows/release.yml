@@ -17,10 +17,8 @@ jobs:
         include:
           - name: macOS
             os: macos-14
-            args: --bundles dmg
           - name: Windows
             os: windows-2022
-            args: --bundles nsis
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -41,19 +39,66 @@ jobs:
         if: runner.os == 'Windows'
         run: sdkmanager "platform-tools" "build-tools;35.0.0"
       - run: npm ci
-      - uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 构建 macOS 应用
+        if: runner.os == 'macOS'
+        run: npm run tauri -- build --bundles app
+      - name: 生成 macOS DMG
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          stage="$RUNNER_TEMP/dmg"
+          mkdir -p "$stage"
+          ditto "src-tauri/target/release/bundle/macos/APK Compat Helper.app" "$stage/APK Compat Helper.app"
+          ln -s /Applications "$stage/Applications"
+          hdiutil create -volname "APK Compat Helper" -srcfolder "$stage" -ov -format UDZO "$RUNNER_TEMP/APK.Compat.Helper_${version}_aarch64.dmg"
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'macOS'
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: APK Compat Helper ${{ github.ref_name }}
-          releaseBody: |
+          name: release-macos
+          path: ${{ runner.temp }}/APK.Compat.Helper_*_aarch64.dmg
+
+      - name: 构建 Windows 应用
+        if: runner.os == 'Windows'
+        run: npm run tauri -- build --bundles nsis
+      - name: 生成 Windows 便携版
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          $version = $env:GITHUB_REF_NAME.TrimStart("v")
+          $name = "APK-Compat-Helper-$version-Portable"
+          $portable = Join-Path $env:RUNNER_TEMP $name
+          New-Item -ItemType Directory -Force $portable | Out-Null
+          Copy-Item "src-tauri/target/release/apk-compat-helper.exe" (Join-Path $portable "APK-Compat-Helper.exe")
+          Copy-Item "src-tauri/target/release/resources" $portable -Recurse
+          tar.exe -a -cf (Join-Path $env:RUNNER_TEMP "APK-Compat-Helper-$version-Windows-x64-Portable.zip") -C $env:RUNNER_TEMP $name
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'Windows'
+        with:
+          name: release-windows
+          path: ${{ runner.temp }}/APK-Compat-Helper-*-Windows-x64-Portable.zip
+
+  release:
+    name: 发布 Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          merge-multiple: true
+          path: release
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: APK Compat Helper ${{ github.ref_name }}
+          body: |
             APK Compat Helper 桌面版本.
 
             - macOS: Apple Silicon DMG
-            - Windows: x64 NSIS 安装程序
+            - Windows: x64 便携版 ZIP, 解压后双击 APK-Compat-Helper.exe
 
-            安装包未进行商业代码签名或 macOS 公证, 首次运行时系统可能显示安全提示.
-          releaseDraft: true
+            文件未进行商业代码签名或 macOS 公证, 首次运行时系统可能显示安全提示.
+          files: release/*
+          draft: false
           prerelease: false
-          args: ${{ matrix.args }}

@@ -6,7 +6,7 @@ Local desktop utility for scanning legacy APKs, explaining Android compatibility
 
 ## Download
 
-Download the macOS DMG or Windows EXE installer from [GitHub Releases](https://github.com/rianlu/apk-compat-helper/releases).
+Download the macOS DMG or Windows portable ZIP from [GitHub Releases](https://github.com/rianlu/apk-compat-helper/releases).
 
 ## Features
 
@@ -36,7 +36,7 @@ Download the macOS DMG or Windows EXE installer from [GitHub Releases](https://g
 | Platform | Baseline | Artifact |
 | --- | --- | --- |
 | macOS | macOS 12+, Apple Silicon | `.app`, `.dmg` |
-| Windows | Windows 10 21H2+, x64 | `.exe` NSIS installer |
+| Windows | Windows 10 21H2+, x64 | Portable `.zip`, extract and run |
 
 The project uses Tauri 2, React, and Rust. GitHub Actions builds each installer on its target operating system.
 

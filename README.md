@@ -6,7 +6,7 @@
 
 ## 下载
 
-从 [GitHub Releases](https://github.com/rianlu/apk-compat-helper/releases) 下载 macOS DMG 或 Windows EXE 安装包.
+从 [GitHub Releases](https://github.com/rianlu/apk-compat-helper/releases) 下载 macOS DMG 或 Windows 便携版 ZIP.
 
 ## 功能
 
@@ -36,7 +36,7 @@
 | 平台 | 支持基线 | 构建产物 |
 | --- | --- | --- |
 | macOS | macOS 12及以上, Apple Silicon | `.app`, `.dmg` |
-| Windows | Windows 10 21H2及以上, x64 | `.exe` NSIS 安装程序 |
+| Windows | Windows 10 21H2及以上, x64 | 便携版 `.zip`, 解压后直接运行 |
 
 项目采用 Tauri 2、React 和 Rust. GitHub Actions 会分别在 macOS 和 Windows 环境构建对应安装包.
 
