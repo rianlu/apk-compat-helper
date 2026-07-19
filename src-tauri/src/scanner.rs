@@ -94,6 +94,7 @@ pub struct ScanReport {
 struct ZipFacts {
     dex_count: usize,
     native_libraries: Vec<String>,
+    empty_resources: usize,
     has_http: bool,
     has_permission_request_code: bool,
 }
@@ -200,6 +201,22 @@ pub fn scan(path: &str, requested_target: Option<u32>) -> Result<ScanReport, Box
             title: "包含原生库".into(),
             summary: "本工具不会修改原生代码, 输出结果需要设备验证.".into(),
             evidence: zip_facts.native_libraries.clone(),
+            permission_details: Vec::new(),
+            can_continue: true,
+            auto_fix: false,
+        });
+    }
+
+    if zip_facts.empty_resources > 0 {
+        findings.push(Finding {
+            id: "invalid_resources".into(),
+            level: "experimental".into(),
+            title: "包含无法标准重建的资源".into(),
+            summary: format!(
+                "检测到 {} 个空资源文件. 原 APK不一定损坏, 但标准 AAPT2 无法安全重新编译这些资源.",
+                zip_facts.empty_resources
+            ),
+            evidence: vec![format!("{} 个 0 字节资源文件", zip_facts.empty_resources)],
             permission_details: Vec::new(),
             can_continue: true,
             auto_fix: false,
@@ -334,6 +351,7 @@ fn inspect_zip(path: &Path) -> Result<ZipFacts, Box<dyn Error>> {
     let mut inspected_size = 0u64;
     let mut dex_count = 0usize;
     let mut native_libraries = Vec::new();
+    let mut empty_resources = 0usize;
     let mut has_http = false;
     let mut has_permission_request_code = false;
 
@@ -353,6 +371,9 @@ fn inspect_zip(path: &Path) -> Result<ZipFacts, Box<dyn Error>> {
         }
         if name.starts_with("lib/") && name.ends_with(".so") {
             native_libraries.push(name.clone());
+        }
+        if name.starts_with("res/") && !name.ends_with('/') && entry.size() == 0 {
+            empty_resources += 1;
         }
 
         let inspect = name.ends_with(".dex")
@@ -378,6 +399,7 @@ fn inspect_zip(path: &Path) -> Result<ZipFacts, Box<dyn Error>> {
     Ok(ZipFacts {
         dex_count,
         native_libraries,
+        empty_resources,
         has_http,
         has_permission_request_code,
     })

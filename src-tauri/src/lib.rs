@@ -68,6 +68,29 @@ async fn repair_apk(
 }
 
 #[tauri::command]
+fn available_output_path(path: String) -> String {
+    let path = PathBuf::from(path);
+    if !path.exists() {
+        return path.display().to_string();
+    }
+    let parent = path.parent().unwrap_or_else(|| std::path::Path::new("."));
+    let stem = path
+        .file_stem()
+        .and_then(|value| value.to_str())
+        .unwrap_or("output");
+    let extension = path
+        .extension()
+        .and_then(|value| value.to_str())
+        .unwrap_or("apk");
+    (2..)
+        .map(|index| parent.join(format!("{stem}_{index}.{extension}")))
+        .find(|candidate| !candidate.exists())
+        .unwrap()
+        .display()
+        .to_string()
+}
+
+#[tauri::command]
 async fn list_devices() -> Result<Vec<device::Device>, String> {
     tauri::async_runtime::spawn_blocking(|| device::list().map_err(|error| error.to_string()))
         .await
@@ -130,10 +153,31 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             scan_apk,
             repair_apk,
+            available_output_path,
             list_devices,
             install_apk,
             reveal_path
         ])
         .run(tauri::generate_context!())
         .expect("failed to run APK Compat Helper");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+
+    #[test]
+    fn picks_a_new_output_name_when_file_exists() {
+        let directory =
+            std::env::temp_dir().join(format!("apk-output-test-{}", std::process::id()));
+        fs::create_dir_all(&directory).unwrap();
+        let original = directory.join("theme.apk");
+        fs::write(&original, b"test").unwrap();
+        assert_eq!(
+            available_output_path(original.display().to_string()),
+            directory.join("theme_2.apk").display().to_string()
+        );
+        fs::remove_dir_all(directory).unwrap();
+    }
 }

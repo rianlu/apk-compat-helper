@@ -1,0 +1,59 @@
+name: 发布桌面版本
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: 构建 ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS
+            os: macos-14
+            args: --bundles dmg
+          - name: Windows
+            os: windows-2022
+            args: --bundles nsis
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-java@v4
+        if: runner.os == 'Windows'
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: android-actions/setup-android@v3
+        if: runner.os == 'Windows'
+      - name: 安装 Windows Android 工具
+        if: runner.os == 'Windows'
+        run: sdkmanager "platform-tools" "build-tools;35.0.0"
+      - run: npm ci
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: APK Compat Helper ${{ github.ref_name }}
+          releaseBody: |
+            APK Compat Helper 桌面版本.
+
+            - macOS: Apple Silicon DMG
+            - Windows: x64 NSIS 安装程序
+
+            安装包未进行商业代码签名或 macOS 公证, 首次运行时系统可能显示安全提示.
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}

@@ -3,5 +3,5 @@
   "identifier": "default",
   "description": "Default desktop permissions",
   "windows": ["main"],
-  "permissions": ["core:default", "dialog:allow-open", "dialog:allow-save"]
+  "permissions": ["core:default", "core:window:allow-start-dragging", "dialog:allow-open", "dialog:allow-save"]
 }

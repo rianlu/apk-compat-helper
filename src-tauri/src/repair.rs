@@ -61,7 +61,9 @@ pub fn repair_with_progress<F: Fn(&str)>(
         Some(options.target_sdk),
     )?;
 
-    let zipalign = super::scanner::find_android_tool("zipalign").ok_or("未找到 zipalign")?;
+    let aapt2 = super::scanner::find_android_tool("aapt2").ok_or("未找到内置或本机 aapt2")?;
+    let zipalign =
+        super::scanner::find_android_tool("zipalign").ok_or("未找到内置或本机 zipalign")?;
     let keytool = bundled_path(
         "APK_COMPAT_TOOLS_DIR",
         &format!("runtime/bin/{}", platform_executable("keytool")),
@@ -77,7 +79,7 @@ pub fn repair_with_progress<F: Fn(&str)>(
     progress("decoding");
     run(
         apktool_command()?
-            .args(["d", "-f", "-o"])
+            .args(["d", "-f", "-s", "-o"])
             .arg(&decoded)
             .arg(source),
         "APK 解包失败",
@@ -100,6 +102,8 @@ pub fn repair_with_progress<F: Fn(&str)>(
         apktool_command()?
             .arg("b")
             .arg(&decoded)
+            .arg("--aapt")
+            .arg(&aapt2)
             .arg("-o")
             .arg(&unsigned),
         "APK 重建失败",
@@ -344,8 +348,9 @@ fn jar_command(jar: &str) -> Option<Command> {
     let java = bundled_path(
         "APK_COMPAT_TOOLS_DIR",
         &format!("runtime/bin/{}", platform_executable("java")),
-    )?;
-    let jar = bundled_path("APK_COMPAT_COMMON_TOOLS_DIR", jar)?;
+    )
+    .or_else(|| find_command("java"))?;
+    let jar_path = bundled_path("APK_COMPAT_COMMON_TOOLS_DIR", jar)?;
     let mut command = crate::background_command(java);
     command
         .args([
@@ -354,7 +359,7 @@ fn jar_command(jar: &str) -> Option<Command> {
             "-Dfile.encoding=UTF-8",
             "-jar",
         ])
-        .arg(jar);
+        .arg(jar_path);
     Some(command)
 }
 
@@ -367,22 +372,23 @@ fn platform_executable(name: &str) -> String {
 }
 
 fn apktool_command() -> Result<Command, Box<dyn Error>> {
-    jar_command("apktool.jar")
-        .or_else(|| find_command("apktool").map(crate::background_command))
-        .ok_or_else(|| "未找到内置或本机 apktool".into())
+    jar_command("apktool.jar").ok_or_else(|| "未找到内置 apktool 或 Java Runtime".into())
 }
 
 fn apksigner_command() -> Result<Command, Box<dyn Error>> {
-    jar_command("apksigner.jar")
-        .or_else(|| super::scanner::find_android_tool("apksigner").map(crate::background_command))
-        .ok_or_else(|| "未找到内置或本机 apksigner".into())
+    jar_command("apksigner.jar").ok_or_else(|| "未找到内置 apksigner 或 Java Runtime".into())
 }
 
 fn run(command: &mut Command, message: &str) -> Result<Output, Box<dyn Error>> {
     let output = command.output()?;
     if !output.status.success() {
-        let detail = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("{message}: {}", detail.trim()).into());
+        let detail = [&output.stderr, &output.stdout]
+            .into_iter()
+            .map(|bytes| String::from_utf8_lossy(bytes).trim().to_owned())
+            .filter(|text| !text.is_empty())
+            .collect::<Vec<_>>()
+            .join("\n");
+        return Err(format!("{message}: {detail}").into());
     }
     Ok(output)
 }
