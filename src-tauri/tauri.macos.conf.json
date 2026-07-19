@@ -3,6 +3,7 @@
     "resources": [
       "resources/compatibility-catalog.json",
       "resources/tooling/common/*.jar",
+      "resources/tooling/macos/aapt",
       "resources/tooling/macos/aapt2",
       "resources/tooling/macos/adb",
       "resources/tooling/macos/zipalign",

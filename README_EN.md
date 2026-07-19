@@ -17,7 +17,7 @@ Download the macOS DMG or Windows portable ZIP from [GitHub Releases](https://gi
 - Show experimental findings with real manifest permission names and bilingual descriptions.
 - Allow users to continue even when compatibility risks are present.
 - Update targetSDK, launcher `android:exported`, and optional cleartext HTTP settings.
-- Rebuild with apktool, then align, re-sign, and verify the APK.
+- Rebuild with Apktool 3 + AAPT2 by default. Automatically fall back to Apktool 2 + AAPT1 for identified legacy resource errors, then align, re-sign, and verify the APK.
 - Show live progress and save next to the source APK by default.
 - Refresh connected devices and install the output through the bundled ADB.
 - Support Chinese, English, light, dark, and system themes.
@@ -29,6 +29,7 @@ Download the macOS DMG or Windows portable ZIP from [GitHub Releases](https://gi
 - The output is signed with a locally generated certificate. If the original signed app is installed, it usually must be removed before installing the rebuilt APK.
 - Runtime permission detection searches for common request patterns. Reflection, obfuscation, third-party frameworks, and native code may not be detected.
 - Scoped storage, background location, foreground service types, and every Android 12-16 behavior change are not fully covered yet.
+- The legacy fallback handles some non-standard old resources, but cannot guarantee rebuilding every corrupted, protected, or specially built APK.
 - macOS notarization and automatic update checks are not included.
 
 ## Platforms

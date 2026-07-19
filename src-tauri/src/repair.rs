@@ -77,28 +77,32 @@ pub fn repair_with_progress<F: Fn(&str)>(
     let aligned = work.path.join("aligned.apk");
 
     progress("decoding");
-    run(
+    let decode_result = run(
         apktool_command()?
             .args(["d", "-f", "-s", "-o"])
             .arg(&decoded)
             .arg(source),
         "APK 解包失败",
-    )?;
+    );
+
+    let mut legacy_fallback = decode_result
+        .as_ref()
+        .err()
+        .is_some_and(|error| is_legacy_resource_error(&error.to_string()));
+    if let Err(error) = decode_result {
+        if !legacy_fallback {
+            return Err(error);
+        }
+        decode_legacy(source, &decoded)?;
+    }
 
     progress("patching");
-    let manifest_path = decoded.join("AndroidManifest.xml");
-    let manifest = fs::read_to_string(&manifest_path)?;
-    let (manifest, mut changes) = patch_manifest(manifest, &options)?;
-    fs::write(&manifest_path, manifest)?;
-    let apktool_yml = decoded.join("apktool.yml");
-    let metadata = fs::read_to_string(&apktool_yml)?;
-    fs::write(
-        &apktool_yml,
-        set_yaml_value(&metadata, "  targetSdkVersion:", options.target_sdk),
-    )?;
+    let mut changes = patch_decoded(&decoded, &options)?;
 
     progress("building");
-    run(
+    if legacy_fallback {
+        build_legacy(&decoded, &unsigned)?;
+    } else if let Err(error) = run(
         apktool_command()?
             .arg("b")
             .arg(&decoded)
@@ -107,7 +111,19 @@ pub fn repair_with_progress<F: Fn(&str)>(
             .arg("-o")
             .arg(&unsigned),
         "APK 重建失败",
-    )?;
+    ) {
+        if !is_legacy_resource_error(&error.to_string()) {
+            return Err(error);
+        }
+        legacy_fallback = true;
+        fs::remove_dir_all(&decoded)?;
+        decode_legacy(source, &decoded)?;
+        changes = patch_decoded(&decoded, &options)?;
+        build_legacy(&decoded, &unsigned)?;
+    }
+    if legacy_fallback {
+        changes.push("使用 Apktool 2 + AAPT1 旧版兼容链路".into());
+    }
     progress("aligning");
     run(
         crate::background_command(&zipalign)
@@ -225,6 +241,61 @@ pub fn repair_with_progress<F: Fn(&str)>(
         signature_verified: true,
         alignment_verified: true,
     })
+}
+
+fn patch_decoded(decoded: &Path, options: &RepairOptions) -> Result<Vec<String>, Box<dyn Error>> {
+    let manifest_path = decoded.join("AndroidManifest.xml");
+    let manifest = fs::read_to_string(&manifest_path)?;
+    let (manifest, changes) = patch_manifest(manifest, options)?;
+    fs::write(&manifest_path, manifest)?;
+    let apktool_yml = decoded.join("apktool.yml");
+    let metadata = fs::read_to_string(&apktool_yml)?;
+    fs::write(
+        &apktool_yml,
+        set_yaml_value(&metadata, "  targetSdkVersion:", options.target_sdk),
+    )?;
+    Ok(changes)
+}
+
+fn decode_legacy(source: &Path, decoded: &Path) -> Result<(), Box<dyn Error>> {
+    if decoded.exists() {
+        fs::remove_dir_all(decoded)?;
+    }
+    run(
+        apktool2_command()?
+            .args(["d", "-f", "-s", "-o"])
+            .arg(decoded)
+            .arg(source),
+        "APK 旧版兼容解包失败",
+    )?;
+    Ok(())
+}
+
+fn build_legacy(decoded: &Path, unsigned: &Path) -> Result<(), Box<dyn Error>> {
+    let aapt = super::scanner::find_android_tool("aapt").ok_or("未找到内置或本机 aapt")?;
+    run(
+        apktool2_command()?
+            .arg("b")
+            .arg(decoded)
+            .arg("-a")
+            .arg(aapt)
+            .arg("-o")
+            .arg(unsigned),
+        "APK 旧版兼容重建失败",
+    )?;
+    Ok(())
+}
+
+fn is_legacy_resource_error(message: &str) -> bool {
+    [
+        "Unresolved attr reference",
+        "Could not decode attribute value",
+        "Unexpected attribute name",
+        "resources.arsc",
+    ]
+    .iter()
+    .any(|marker| message.contains(marker))
+        || (message.contains("attribute android:") && message.contains("not found"))
 }
 
 fn patch_manifest(
@@ -375,6 +446,10 @@ fn apktool_command() -> Result<Command, Box<dyn Error>> {
     jar_command("apktool.jar").ok_or_else(|| "未找到内置 apktool 或 Java Runtime".into())
 }
 
+fn apktool2_command() -> Result<Command, Box<dyn Error>> {
+    jar_command("apktool2.jar").ok_or_else(|| "未找到内置 Apktool 2 或 Java Runtime".into())
+}
+
 fn apksigner_command() -> Result<Command, Box<dyn Error>> {
     jar_command("apksigner.jar").ok_or_else(|| "未找到内置 apksigner 或 Java Runtime".into())
 }
@@ -442,6 +517,18 @@ mod tests {
     }
 
     #[test]
+    fn classifies_only_legacy_resource_errors_for_fallback() {
+        assert!(is_legacy_resource_error(
+            "Unresolved attr reference: android:SecondaryProgress"
+        ));
+        assert!(is_legacy_resource_error(
+            "error: attribute android:name not found"
+        ));
+        assert!(!is_legacy_resource_error("AAPT2 error: file not found"));
+        assert!(!is_legacy_resource_error("APK 签名失败: invalid key"));
+    }
+
+    #[test]
     fn repairs_theme_fixture() {
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
         let source = root.join("test/com.smartisanos.launcher.theme.aero.apk");
@@ -467,5 +554,29 @@ mod tests {
         assert!(!Path::new(&format!("{}.idsig", output.display())).exists());
         let report = crate::scanner::scan(output.to_str().unwrap(), None).unwrap();
         assert_eq!(report.target_before, Some(24));
+    }
+
+    #[test]
+    #[ignore = "requires APK_COMPAT_LEGACY_FIXTURE"]
+    fn repairs_legacy_fixture() {
+        let source = env::var("APK_COMPAT_LEGACY_FIXTURE").unwrap();
+        let work = WorkDir::new().unwrap();
+        let output = work.path.join("repaired.apk");
+        let result = repair(
+            &source,
+            output.to_str().unwrap(),
+            RepairOptions {
+                target_sdk: 36,
+                add_exported: true,
+                allow_cleartext: false,
+            },
+            &work.path.join("data"),
+        )
+        .unwrap();
+        assert!(result
+            .changes
+            .contains(&"使用 Apktool 2 + AAPT1 旧版兼容链路".to_owned()));
+        assert!(result.signature_verified);
+        assert!(result.alignment_verified);
     }
 }

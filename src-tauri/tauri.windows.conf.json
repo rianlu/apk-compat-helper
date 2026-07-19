@@ -6,6 +6,7 @@
     "resources": [
       "resources/compatibility-catalog.json",
       "resources/tooling/common/*.jar",
+      "resources/tooling/windows/aapt.exe",
       "resources/tooling/windows/aapt2.exe",
       "resources/tooling/windows/adb.exe",
       "resources/tooling/windows/AdbWinApi.dll",

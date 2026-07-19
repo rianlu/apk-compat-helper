@@ -1,6 +1,6 @@
 [package]
 name = "apk-compat-helper"
-version = "0.1.6"
+version = "0.1.7"
 description = "Local APK compatibility scanner and repair tool"
 edition = "2021"
 

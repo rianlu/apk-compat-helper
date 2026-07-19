@@ -9,6 +9,7 @@ $buildTools = Get-ChildItem (Join-Path $sdk "build-tools") -Directory | Sort-Obj
 
 if (-not $buildTools) { throw "Android SDK Build Tools were not found" }
 if (-not (Test-Path (Join-Path $common "apktool.jar"))) { throw "resources/tooling/common/apktool.jar is missing" }
+if (-not (Test-Path (Join-Path $common "apktool2.jar"))) { throw "resources/tooling/common/apktool2.jar is missing" }
 
 New-Item -ItemType Directory -Force $output, $common | Out-Null
 $runtime = Join-Path $output "runtime"
@@ -23,6 +24,7 @@ if (-not (Test-Path (Join-Path $runtime "bin/java.exe"))) {
 }
 
 Copy-Item (Join-Path $javaHome "bin/keytool.exe") (Join-Path $runtime "bin/keytool.exe")
+Copy-Item (Join-Path $buildTools.FullName "aapt.exe") $output
 Copy-Item (Join-Path $buildTools.FullName "aapt2.exe") $output
 Copy-Item (Join-Path $buildTools.FullName "zipalign.exe") $output
 Copy-Item (Join-Path $buildTools.FullName "lib/apksigner.jar") (Join-Path $common "apksigner.jar")
@@ -31,6 +33,8 @@ Copy-Item (Join-Path $sdk "platform-tools/AdbWinApi.dll") $output
 Copy-Item (Join-Path $sdk "platform-tools/AdbWinUsbApi.dll") $output
 
 & (Join-Path $runtime "bin/java.exe") -jar (Join-Path $common "apktool.jar") --version
+& (Join-Path $runtime "bin/java.exe") -jar (Join-Path $common "apktool2.jar") --version
 & (Join-Path $runtime "bin/java.exe") -jar (Join-Path $common "apksigner.jar") version
+& (Join-Path $output "aapt.exe") version
 & (Join-Path $output "aapt2.exe") version
 & (Join-Path $output "adb.exe") version
