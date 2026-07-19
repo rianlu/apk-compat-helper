@@ -2,7 +2,39 @@ mod device;
 mod repair;
 mod scanner;
 
+use std::path::PathBuf;
 use tauri::{Emitter, Manager};
+
+pub(crate) fn background_command(program: impl AsRef<std::ffi::OsStr>) -> std::process::Command {
+    #[cfg(target_os = "windows")]
+    let mut command = std::process::Command::new(program);
+    #[cfg(not(target_os = "windows"))]
+    let command = std::process::Command::new(program);
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        command.creation_flags(0x08000000);
+    }
+    command
+}
+
+#[cfg(target_os = "windows")]
+fn command_compatible_path(path: PathBuf) -> PathBuf {
+    let value = path.to_string_lossy();
+    if let Some(value) = value.strip_prefix(r"\\?\UNC\") {
+        return PathBuf::from(format!(r"\\{value}"));
+    }
+    if let Some(value) = value.strip_prefix(r"\\?\") {
+        return PathBuf::from(value);
+    }
+    drop(value);
+    path
+}
+
+#[cfg(not(target_os = "windows"))]
+fn command_compatible_path(path: PathBuf) -> PathBuf {
+    path
+}
 
 #[tauri::command]
 async fn scan_apk(path: String, target_sdk: Option<u32>) -> Result<scanner::ScanReport, String> {
@@ -58,16 +90,13 @@ fn reveal_path(path: String) -> Result<(), String> {
         return Err("输出文件不存在".into());
     }
     #[cfg(target_os = "macos")]
-    let status = std::process::Command::new("open")
-        .arg("-R")
-        .arg(path)
-        .status();
+    let status = background_command("open").arg("-R").arg(path).status();
     #[cfg(target_os = "windows")]
-    let status = std::process::Command::new("explorer")
+    let status = background_command("explorer")
         .arg(format!("/select,{}", path.display()))
         .status();
     #[cfg(not(any(target_os = "macos", target_os = "windows")))]
-    let status = std::process::Command::new("xdg-open")
+    let status = background_command("xdg-open")
         .arg(path.parent().unwrap_or(path))
         .status();
     status
@@ -86,12 +115,9 @@ pub fn run() {
             } else {
                 "windows"
             };
-            let tools = app
-                .path()
-                .resource_dir()?
-                .join("resources/tooling")
-                .join(platform);
-            let common_tools = app.path().resource_dir()?.join("resources/tooling/common");
+            let resource_dir = command_compatible_path(app.path().resource_dir()?);
+            let tools = resource_dir.join("resources/tooling").join(platform);
+            let common_tools = resource_dir.join("resources/tooling/common");
             if tools.is_dir() {
                 std::env::set_var("APK_COMPAT_TOOLS_DIR", tools);
             }

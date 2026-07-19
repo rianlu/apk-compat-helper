@@ -106,7 +106,7 @@ pub fn repair_with_progress<F: Fn(&str)>(
     )?;
     progress("aligning");
     run(
-        Command::new(&zipalign)
+        crate::background_command(&zipalign)
             .args(["-f", "4"])
             .arg(&unsigned)
             .arg(&aligned),
@@ -117,7 +117,7 @@ pub fn repair_with_progress<F: Fn(&str)>(
     let keystore = data_dir.join("local-signing.p12");
     if !keystore.exists() {
         run(
-            Command::new(keytool)
+            crate::background_command(keytool)
                 .args(["-genkeypair", "-storetype", "PKCS12", "-keystore"])
                 .arg(&keystore)
                 .args([
@@ -169,7 +169,9 @@ pub fn repair_with_progress<F: Fn(&str)>(
         "APK 签名验证失败",
     )?;
     run(
-        Command::new(&zipalign).args(["-c", "4"]).arg(output),
+        crate::background_command(&zipalign)
+            .args(["-c", "4"])
+            .arg(output),
         "APK 对齐验证失败",
     )?;
     changes.push("使用本地证书重新签名".into());
@@ -344,8 +346,15 @@ fn jar_command(jar: &str) -> Option<Command> {
         &format!("runtime/bin/{}", platform_executable("java")),
     )?;
     let jar = bundled_path("APK_COMPAT_COMMON_TOOLS_DIR", jar)?;
-    let mut command = Command::new(java);
-    command.arg("-jar").arg(jar);
+    let mut command = crate::background_command(java);
+    command
+        .args([
+            "-Duser.language=en",
+            "-Duser.country=US",
+            "-Dfile.encoding=UTF-8",
+            "-jar",
+        ])
+        .arg(jar);
     Some(command)
 }
 
@@ -359,13 +368,13 @@ fn platform_executable(name: &str) -> String {
 
 fn apktool_command() -> Result<Command, Box<dyn Error>> {
     jar_command("apktool.jar")
-        .or_else(|| find_command("apktool").map(Command::new))
+        .or_else(|| find_command("apktool").map(crate::background_command))
         .ok_or_else(|| "未找到内置或本机 apktool".into())
 }
 
 fn apksigner_command() -> Result<Command, Box<dyn Error>> {
     jar_command("apksigner.jar")
-        .or_else(|| super::scanner::find_android_tool("apksigner").map(Command::new))
+        .or_else(|| super::scanner::find_android_tool("apksigner").map(crate::background_command))
         .ok_or_else(|| "未找到内置或本机 apksigner".into())
 }
 

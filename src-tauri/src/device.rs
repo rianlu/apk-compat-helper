@@ -3,7 +3,6 @@ use std::{
     env,
     error::Error,
     path::{Path, PathBuf},
-    process::Command,
 };
 
 #[derive(Debug, Serialize)]
@@ -15,7 +14,7 @@ pub struct Device {
 }
 
 pub fn list() -> Result<Vec<Device>, Box<dyn Error>> {
-    let output = Command::new(find_adb().ok_or("未找到 adb")?)
+    let output = crate::background_command(find_adb().ok_or("未找到 adb")?)
         .args(["devices", "-l"])
         .output()?;
     if !output.status.success() {
@@ -31,7 +30,7 @@ pub fn install(serial: &str, apk: &str) -> Result<String, Box<dyn Error>> {
     if serial.is_empty() || !Path::new(apk).is_file() {
         return Err("设备或 APK 路径无效".into());
     }
-    let output = Command::new(find_adb().ok_or("未找到 adb")?)
+    let output = crate::background_command(find_adb().ok_or("未找到 adb")?)
         .args(["-s", serial, "install", "-r", apk])
         .output()?;
     if !output.status.success() {

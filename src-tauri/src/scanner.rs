@@ -7,7 +7,6 @@ use std::{
     fs::{self, File},
     io::{BufReader, Read},
     path::{Path, PathBuf},
-    process::Command,
 };
 use zip::ZipArchive;
 
@@ -392,7 +391,7 @@ fn contains_bytes(haystack: &[u8], needle: &[u8]) -> bool {
 
 fn read_badging(path: &Path) -> Result<HashMap<String, String>, Box<dyn Error>> {
     let aapt2 = find_aapt2().ok_or("未找到内置或本机 aapt2")?;
-    let output = Command::new(aapt2)
+    let output = crate::background_command(aapt2)
         .args(["dump", "badging"])
         .arg(path)
         .output()?;

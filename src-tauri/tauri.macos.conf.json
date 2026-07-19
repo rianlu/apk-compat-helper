@@ -6,7 +6,7 @@
       "resources/tooling/macos/aapt2",
       "resources/tooling/macos/adb",
       "resources/tooling/macos/zipalign",
-      "resources/tooling/macos/runtime/bin/*",
+      "resources/tooling/macos/runtime/bin/**/*",
       "resources/tooling/macos/runtime/conf/**/*",
       "resources/tooling/macos/runtime/lib/**/*",
       "resources/tooling/macos/runtime/release"

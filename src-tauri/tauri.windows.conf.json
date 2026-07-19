@@ -11,7 +11,7 @@
       "resources/tooling/windows/AdbWinApi.dll",
       "resources/tooling/windows/AdbWinUsbApi.dll",
       "resources/tooling/windows/zipalign.exe",
-      "resources/tooling/windows/runtime/bin/*",
+      "resources/tooling/windows/runtime/bin/**/*",
       "resources/tooling/windows/runtime/conf/**/*",
       "resources/tooling/windows/runtime/lib/**/*",
       "resources/tooling/windows/runtime/release"
